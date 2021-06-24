@@ -94,8 +94,8 @@ class filter_fulltranslate extends moodle_text_filter {
         } else {
             $translatedtext = $this->generate_translation_update_database($text, $language, $hashkey, $format);
         }
-        if (empty(WS_SERVER) && has_capability('filter/fulltranslate:edittranslations', $this->context)) {
 
+        if (self::showeditbutton()) {
             $records =$DB->get_records(self::TABLENAME, ['hashkey' => $hashkey, 'lang' => $language], 'id ASC', 'id', 0, 1);
             $id = reset($records)->id;
 
@@ -109,6 +109,32 @@ class filter_fulltranslate extends moodle_text_filter {
                 <i class="fa fa-pencil-square-o" aria-hidden="true"></i></a>';
         }
         return $translatedtext;
+    }
+
+    private static $showeditbutton = null;
+    private static function showeditbutton() {
+        if (!isset(self::$showeditbutton)) {
+            self::$showeditbutton = true;
+
+            foreach (array_keys($_GET) as $param) {
+                if (strpos($param, 'download') !== false) {
+                    self::$showeditbutton = false;
+                    return self::$showeditbutton;
+                }
+            }
+
+            if (!empty(WS_SERVER)) {
+                self::$showeditbutton = false;
+                return self::$showeditbutton;
+            }
+
+            if (!has_capability('filter/fulltranslate:edittranslations', context_system::instance())) {
+                self::$showeditbutton = false;
+                return self::$showeditbutton;
+            }
+        }
+
+        return self::$showeditbutton;
     }
 
     public function generate_translation_update_database($text, $language, $hashkey, $format) {
